@@ -1,0 +1,238 @@
+name: Tour promo video
+
+# Builds a tour's promotion video entirely on the runner:
+#   plan     tour JSON + the live brochure page -> shots, 必選理由, route map, narration
+#   media    Gemini images (GEMINI_API_KEY) / brochure photos; Pexels clips (PEXELS_API_KEY);
+#            the tour's own HLS intro; logo; QR; presenter green-screen cutout
+#   voice    OmniVoice clone of the presenter (encrypted reference, VOICE_KEY), edge-tts default
+#   music    yt-dlp from the YouTube URL you give (may be blocked from GitHub's IPs - then no music)
+#   compose  HyperFrames composition in the brochure's look -> render -> mix -> out/
+# Nothing here touches the live site. The MP4 lands in the run's artifacts and in a Release
+# tagged promo-<id>-run<n>; a small report is committed to promo_video/runs/.
+#
+# Two ways to start it:
+#   1. Actions tab -> "Run workflow" (inputs below)
+#   2. edit promo_video/run.json and push to main - same keys as the inputs
+
+on:
+  workflow_dispatch:
+    inputs:
+      tour_id:
+        description: "Tour id (kv_json_exports/tour_<id>.json, else fetched from the live site)"
+        required: true
+        default: "7622"
+      voice:
+        description: "Narration voice (omnivoice = presenter clone, CPU-only, ~60x real time; edge = zh-TW neural, seconds)"
+        type: choice
+        default: edge
+        options: [edge, omnivoice]
+      youtube_bgm:
+        description: "YouTube URL for the music bed (optional; copyrighted music will be claimed on YouTube)"
+        required: false
+        default: ""
+      bgm_url:
+        description: "Direct URL of a licensed music file (used if YouTube fails or is empty)"
+        required: false
+        default: ""
+      images:
+        description: "Port images"
+        type: choice
+        default: auto
+        options: [auto, gemini, brochure]
+      quality:
+        description: "Render quality"
+        type: choice
+        default: standard
+        options: [draft, standard, high]
+      publish_r2:
+        description: "Also upload out/ to R2 xotours-videos under tour-intros/<id>/promo/ (needs CLOUDFLARE_API_TOKEN + ACCOUNT_ID)"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths: ["promo_video/run.json"]
+
+concurrency:
+  group: promo-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  promo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: write
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: "1"
+      HF_HOME: ${{ github.workspace }}/.hf
+      HF_HUB_DISABLE_PROGRESS_BARS: "1"
+      OMNIVOICE_STEPS: "16"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve the parameters (dispatch inputs, or run.json on push)
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            J=promo_video/run.json
+            get() { python3 -c "import json,sys; d=json.load(open('$J')); v=d.get('$1', '$2'); print(v if not isinstance(v, bool) else str(v).lower())"; }
+            echo "TOUR_ID=$(get tour_id 7622)"       >> "$GITHUB_ENV"
+            echo "VOICE=$(get voice edge)"           >> "$GITHUB_ENV"
+            echo "YOUTUBE_BGM=$(get youtube_bgm '')" >> "$GITHUB_ENV"
+            echo "BGM_URL=$(get bgm_url '')"         >> "$GITHUB_ENV"
+            echo "IMAGES=$(get images auto)"         >> "$GITHUB_ENV"
+            echo "QUALITY=$(get quality standard)"   >> "$GITHUB_ENV"
+            echo "PUBLISH=$(get publish_r2 false)"   >> "$GITHUB_ENV"
+          else
+            echo "TOUR_ID=${{ inputs.tour_id }}"       >> "$GITHUB_ENV"
+            echo "VOICE=${{ inputs.voice }}"           >> "$GITHUB_ENV"
+            echo "YOUTUBE_BGM=${{ inputs.youtube_bgm }}" >> "$GITHUB_ENV"
+            echo "BGM_URL=${{ inputs.bgm_url }}"       >> "$GITHUB_ENV"
+            echo "IMAGES=${{ inputs.images }}"         >> "$GITHUB_ENV"
+            echo "QUALITY=${{ inputs.quality }}"       >> "$GITHUB_ENV"
+            echo "PUBLISH=${{ inputs.publish_r2 }}"    >> "$GITHUB_ENV"
+          fi
+          cat "$GITHUB_ENV"
+          ls -la "kv_json_exports/tour_${TOUR_ID:-$(python3 -c "import json;print(json.load(open('promo_video/run.json')).get('tour_id','7622'))")}.json" 2>/dev/null || echo "tour JSON not in git - build.py fetches it from the live site"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: System packages (ffmpeg + CJK fonts for headless Chrome)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q ffmpeg fonts-noto-cjk fonts-noto-cjk-extra libsndfile1
+          fc-list | grep -i -c "Noto Sans CJK" || true
+          ffmpeg -version | head -1
+
+      - name: Python packages
+        run: |
+          python -m pip install -q --upgrade pip
+          python -m pip install -q edge-tts yt-dlp pillow numpy "qrcode[pil]" opencc-python-reimplemented soundfile
+          if [ "$VOICE" = "omnivoice" ]; then
+            python -m pip install -q torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+            python -m pip install -q omnivoice
+          fi
+
+      - name: Cache the OmniVoice model (3 GB)
+        if: env.VOICE == 'omnivoice'
+        uses: actions/cache@v4
+        with:
+          path: .hf
+          key: omnivoice-k2fsa-v1
+
+      - name: Decrypt the presenter's voice reference (needs the VOICE_KEY secret)
+        if: env.VOICE == 'omnivoice'
+        env:
+          VOICE_KEY: ${{ secrets.VOICE_KEY }}
+        run: python voice_tool.py decrypt
+
+      - name: Cache HyperFrames' headless Chrome
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/hyperframes
+          key: hyperframes-0.5.1-${{ runner.os }}
+
+      - name: Plan + media
+        working-directory: promo_video
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+        run: |
+          python build.py --id "$TOUR_ID" plan
+          python build.py --id "$TOUR_ID" media --images "$IMAGES"
+
+      - name: Narration
+        working-directory: promo_video
+        timeout-minutes: 150
+        run: |
+          python build.py --id "$TOUR_ID" voice --voice "$VOICE" || { echo "::warning::$VOICE narration failed - falling back to edge-tts"; python build.py --id "$TOUR_ID" voice --voice edge; }
+
+      - name: Music
+        working-directory: promo_video
+        run: |
+          python build.py --id "$TOUR_ID" music --youtube "$YOUTUBE_BGM" --bgm "$BGM_URL" || echo "::warning::no music bed (YouTube refused the runner's IP or no URL given)"
+
+      - name: Compose + lint
+        working-directory: promo_video
+        run: |
+          python build.py --id "$TOUR_ID" compose
+          npx --yes hyperframes@0.5.1 lint || true
+
+      - name: Render
+        working-directory: promo_video
+        run: |
+          mkdir -p renders
+          npx --yes hyperframes@0.5.1 render -q "$QUALITY" -w 2 -o "renders/promo_${TOUR_ID}.mp4"
+          ls -la renders
+
+      - name: Mix music + sfx, poster, YouTube metadata
+        working-directory: promo_video
+        run: |
+          python build.py --id "$TOUR_ID" finish "renders/promo_${TOUR_ID}.mp4"
+          python review_frames.py "out/promo_${TOUR_ID}.mp4" || true
+          ls -la out
+          cat "out/promo_${TOUR_ID}_report.json"
+
+      - name: Upload the video
+        uses: actions/upload-artifact@v4
+        with:
+          name: promo-${{ env.TOUR_ID }}
+          path: |
+            promo_video/out/
+            promo_video/plan.json
+            promo_video/timing.json
+            promo_video/renders/review_sheet.jpg
+          retention-days: 30
+
+      - name: Attach the MP4 to a Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="promo-${TOUR_ID}-run${{ github.run_number }}"
+          gh release create "$TAG" --title "Tour ${TOUR_ID} promo (run ${{ github.run_number }}, $VOICE voice, $QUALITY)" \
+            --notes "Built by run ${{ github.run_id }}. Narration: $VOICE. Images: $IMAGES." \
+            promo_video/out/promo_${TOUR_ID}.mp4 promo_video/out/promo_${TOUR_ID}_poster.jpg promo_video/renders/review_sheet.jpg || true
+
+      - name: Publish to R2 (optional)
+        if: env.PUBLISH == 'true'
+        working-directory: promo_video
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          for f in out/promo_${TOUR_ID}.mp4 out/promo_${TOUR_ID}_poster.jpg; do
+            npx --yes wrangler@3 r2 object put "xotours-videos/tour-intros/${TOUR_ID}/promo/$(basename "$f")" --file "$f" --remote
+          done
+          echo "https://videos.xotours.ca/tour-intros/${TOUR_ID}/promo/promo_${TOUR_ID}.mp4"
+
+      - name: Record the run in git (promo_video/runs/)
+        if: always()
+        run: |
+          mkdir -p promo_video/runs
+          R="promo_video/runs/${TOUR_ID}_run${{ github.run_number }}.json"
+          python3 - "$R" <<'EOF'
+          import json, os, sys, datetime
+          rep = {}
+          p = f"promo_video/out/promo_{os.environ['TOUR_ID']}_report.json"
+          if os.path.exists(p):
+              rep = json.load(open(p))
+          rep.update(status="${{ job.status }}", run="${{ github.run_number }}", run_id="${{ github.run_id }}",
+                     event="${{ github.event_name }}", voice=os.environ.get("VOICE"), quality=os.environ.get("QUALITY"),
+                     finished=datetime.datetime.utcnow().isoformat() + "Z",
+                     release="promo-" + os.environ["TOUR_ID"] + "-run${{ github.run_number }}",
+                     url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}")
+          json.dump(rep, open(sys.argv[1], "w"), indent=1, ensure_ascii=False)
+          print(json.dumps(rep, indent=1, ensure_ascii=False))
+          EOF
+          git config user.name 'GitHub Action'
+          git config user.email 'action@github.com'
+          git add "$R"
+          git commit -m "promo video run ${{ github.run_number }} (${TOUR_ID}): ${{ job.status }} [skip ci]"
+          git pull --rebase origin main
+          git push

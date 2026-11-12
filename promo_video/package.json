@@ -1,0 +1,9 @@
+{
+  "name": "tour-promo-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "npx --yes hyperframes@0.5.1 lint && npx --yes hyperframes@0.5.1 inspect",
+    "render": "npx --yes hyperframes@0.5.1 render -q standard -w 2"
+  }
+}

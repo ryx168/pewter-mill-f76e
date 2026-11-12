@@ -1,0 +1,10 @@
+# everything generated per tour - the engine (build.py, media.py, voice.py, tpl/) is what is tracked
+assets/
+out/
+renders/
+index.html
+meta.json
+plan.json
+timing.json
+node_modules/
+*.log

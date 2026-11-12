@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>__TITLE__</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      /* palette + type = the brochure engine's (scripts/brochure_build.py :root) */
+      :root {
+        --ink: #173236; --teal: #2F747D; --teal-d: #1f5a63; --gold: #c8952b; --gold-l: #f8d578; --gold-d: #b8821a;
+        --sand: #f6f1e7; --sand-d: #e7dcc4; --orange: #d9622b; --red: #e2121c; --line: #d8d0bd; --txt: #222; --muted: #666;
+        --serif: "Noto Serif TC", "PingFang TC", "Microsoft JhengHei", "Microsoft YaHei", serif;
+        --sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", "Microsoft YaHei", sans-serif;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--ink); font-family: var(--sans); color: var(--txt); }
+      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--ink); }
+      .scene { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--sand); opacity: 0; }
+      .scene:first-child { opacity: 1; }
+      .bg { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; transform-origin: center; }
+      .goldtxt { background: linear-gradient(180deg, #fbe9a6 0%, #e2b54a 45%, #9c6a0c 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 3px 2px rgba(60,30,0,.45)); }
+      .serif { font-family: var(--serif); }
+      .sec-t { position: absolute; left: 110px; top: 90px; }
+      .sec-t .zh { font-family: var(--serif); font-weight: 900; font-size: 58px; color: var(--ink); line-height: 1.1; }
+      .sec-t .en { font-family: var(--serif); color: var(--gold); letter-spacing: .18em; font-size: 20px; text-transform: uppercase; margin-top: 8px; }
+      .sec-t .bar { width: 120px; height: 6px; background: var(--gold); margin-top: 16px; }
+      .brand { position: absolute; display: flex; align-items: center; gap: 14px; }
+      .brand img { height: 86px; width: auto; filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); }
+      .brand .t { font-family: var(--serif); font-weight: 900; font-size: 30px; line-height: 1.1; }
+      .brand .t small { display: block; font-family: var(--sans); font-size: 15px; letter-spacing: .22em; font-weight: 700; margin-top: 4px; }
+
+      /* ---- hero ---- */
+      #hero { background: #0d1c20; }
+      #hero video { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; transform: scale(1.18); transform-origin: 50% 0; }  /* the tour intros carry burned-in subtitles + a logo along the bottom: push that strip out of frame */
+      #hero .shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10,22,26,.78) 0%, rgba(10,22,26,.55) 45%, rgba(10,22,26,.10) 100%); }
+      #hero .presenter { position: absolute; left: 60px; bottom: -8px; height: 760px; width: auto; filter: drop-shadow(0 20px 40px rgba(0,0,0,.6)); opacity: 0; }
+      #hero .plate { position: absolute; left: 700px; top: 150px; width: 1140px; }
+      #hero .ribbon { display: inline-block; background: linear-gradient(180deg, #fbe9a6, #e2b54a 50%, #b8821a); color: #4a2a00; font-family: var(--serif); font-weight: 900; font-size: 34px; padding: 10px 34px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.4); opacity: 0; }
+      #hero .ribbon b { color: var(--red); }
+      #hero .title { font-family: var(--serif); font-weight: 900; font-size: 96px; line-height: 1.08; margin-top: 26px; color: #fff; text-shadow: 0 4px 0 rgba(0,0,0,.25), 0 14px 40px rgba(0,0,0,.6); opacity: 0; }
+      #hero .sub { margin-top: 22px; font-family: var(--serif); font-size: 40px; color: #fff; text-shadow: 0 3px 12px rgba(0,0,0,.7); opacity: 0; }
+      #hero .sub b { color: var(--gold-l); }
+      #hero .pills { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 30px; }
+      #hero .pill { background: rgba(226,18,28,.92); color: #fff; font-weight: 900; font-size: 30px; padding: 10px 26px; border-radius: 999px; box-shadow: 0 6px 18px rgba(0,0,0,.4); opacity: 0; }
+      #hero .pill.g { background: linear-gradient(180deg, #fbe9a6, #e2b54a 50%, #b8821a); color: #3a2200; }
+      #hero .brand { right: 70px; top: 60px; color: #fff; }
+
+      /* ---- reasons (poster pages) ---- */
+      .reasons .pbg { position: absolute; inset: 0; background: #fff; }
+      .reasons .pbg img { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; opacity: .55; }
+      .reasons .pbg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.90) 52%, rgba(255,255,255,.35) 100%); }
+      .reasons .ptitle { position: absolute; left: 110px; top: 70px; display: flex; align-items: baseline; gap: 20px; }
+      .reasons .ptitle .n { font-family: var(--serif); font-style: italic; font-weight: 900; font-size: 120px; line-height: 1; }
+      .reasons .ptitle .w { font-family: var(--serif); font-weight: 900; font-size: 92px; color: var(--ink); line-height: 1; }
+      .reasons .ptitle .e { font-family: var(--serif); color: var(--gold); letter-spacing: .2em; font-size: 22px; margin-left: 16px; }
+      .reasons .items { position: absolute; left: 110px; top: 250px; width: 1120px; display: flex; flex-direction: column; gap: 22px; }
+      .reasons .it { display: flex; gap: 26px; align-items: flex-start; opacity: 0; }
+      .reasons .it .rn { font-family: var(--serif); font-style: italic; font-weight: 900; font-size: 86px; line-height: 1; color: var(--gold-d); flex: 0 0 120px; text-shadow: 0 0 10px #fff; }
+      .reasons .it h4 { font-family: var(--serif); font-size: 44px; font-weight: 900; color: #111; line-height: 1.2; text-shadow: 0 0 10px #fff, 0 0 16px #fff; }
+      .reasons .it p { font-size: 25px; color: #333; margin-top: 8px; line-height: 1.45; text-shadow: 0 0 8px #fff; }
+      .reasons .photo { position: absolute; right: 90px; top: 250px; width: 600px; height: 760px; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 70px rgba(0,0,0,.35); border: 8px solid #fff; opacity: 0; }
+      .reasons .photo img { width: 100%; height: 100%; object-fit: cover; }
+
+      /* ---- route ---- */
+      #route .mapbox { position: absolute; left: 90px; top: 210px; width: 1110px; height: 820px; }
+      #route .mapbox svg { width: 100%; height: 100%; }
+      #route .ports { position: absolute; left: 1270px; top: 230px; width: 560px; }
+      #route .port { display: flex; align-items: center; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--line); opacity: 0; }
+      #route .port b { flex: 0 0 90px; font-family: var(--serif); font-size: 20px; color: var(--teal); letter-spacing: .06em; }
+      #route .port .z { font-family: var(--serif); font-weight: 900; font-size: 32px; color: var(--ink); }
+      #route .port .e { font-size: 17px; color: var(--muted); letter-spacing: .08em; }
+      #route .meta { position: absolute; left: 1270px; top: 100px; font-family: var(--serif); font-size: 26px; color: var(--teal-d); line-height: 1.5; }
+      #route .meta b { color: var(--orange); font-size: 34px; }
+
+      /* ---- ports montage ---- */
+      #ports { background: #000; }
+      #ports .shot { position: absolute; inset: 0; opacity: 0; }
+      #ports .shot img { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; transform-origin: center; }
+      #ports .shot .vig { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.25) 0%, transparent 35%, transparent 60%, rgba(0,0,0,.55) 100%); }
+      #ports .shot .dayt { position: absolute; left: 110px; top: 90px; font-family: var(--serif); font-weight: 900; font-size: 26px; letter-spacing: .3em; color: #fff; background: rgba(23,50,54,.75); padding: 10px 22px; border-left: 6px solid var(--gold); }
+      #ports .shot .name { position: absolute; left: 110px; top: 150px; }
+      #ports .shot .name .z { font-family: var(--serif); font-weight: 900; font-size: 92px; color: #fff; text-shadow: 0 4px 0 rgba(0,0,0,.3), 0 14px 40px rgba(0,0,0,.7); line-height: 1.1; }
+      #ports .shot .name .e { font-family: var(--serif); font-size: 30px; letter-spacing: .22em; color: var(--gold-l); text-shadow: 0 2px 10px rgba(0,0,0,.8); margin-top: 6px; }
+      #ports video { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+
+      /* ---- ship ---- */
+      #ship .g1 { position: absolute; left: 90px; top: 210px; width: 1040px; height: 780px; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 70px rgba(0,0,0,.3); opacity: 0; }
+      #ship .g2 { position: absolute; left: 1170px; top: 210px; width: 660px; height: 380px; border-radius: 18px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.3); opacity: 0; }
+      #ship .g3 { position: absolute; left: 1170px; top: 610px; width: 660px; height: 380px; border-radius: 18px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.3); opacity: 0; }
+      #ship .g1 img, #ship .g2 img, #ship .g3 img { width: 100%; height: 100%; object-fit: cover; transform-origin: center; }
+      #ship .cap { display: none; position: absolute; left: 130px; bottom: 130px; background: rgba(23,50,54,.86); color: #fff; padding: 22px 34px; border-left: 8px solid var(--gold); font-family: var(--serif); font-weight: 900; font-size: 44px; opacity: 0; }
+
+      /* ---- price ---- */
+      #price .card { position: absolute; left: 110px; top: 220px; width: 1040px; background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,.18); opacity: 0; }
+      #price .card .hd { background: #e9f0f1; text-align: center; font-weight: 900; font-size: 30px; color: var(--ink); font-family: var(--serif); padding: 16px; }
+      #price .row { display: flex; justify-content: space-between; align-items: center; padding: 20px 34px; border-top: 1px solid var(--line); font-size: 28px; opacity: 0; }
+      #price .row .p { font-family: var(--serif); font-weight: 900; font-size: 40px; color: var(--orange); }
+      #price .big { position: absolute; left: 1200px; top: 230px; width: 660px; text-align: center; opacity: 0; }
+      #price .big .l { font-family: var(--serif); font-size: 34px; color: var(--ink); font-weight: 900; }
+      #price .big .p { font-family: var(--serif); font-weight: 900; font-size: 118px; line-height: 1; letter-spacing: -0.02em; margin: 6px 0; }
+      #price .big .u { font-size: 30px; color: var(--muted); }
+      #price .inc { position: absolute; left: 1230px; top: 560px; width: 600px; display: flex; flex-wrap: wrap; gap: 12px; }
+      #price .inc span { background: var(--sand-d); color: var(--ink); font-weight: 700; font-size: 25px; padding: 10px 18px; border-radius: 8px; opacity: 0; }
+      #price .inc span::before { content: "✓ "; color: var(--teal); font-weight: 900; }
+
+      /* ---- CTA flyer ---- */
+      #cta { background: #0d1c20; }
+      #cta .bgc { position: absolute; inset: 0; filter: blur(14px) brightness(.55) saturate(1.2); transform: scale(1.08); }
+      #cta .frame { position: absolute; inset: 40px; border: 10px solid; border-image: linear-gradient(135deg, #fbe9a6, #b8821a, #fbe9a6) 1; opacity: 0; }
+      #cta .top { position: absolute; left: 0; top: 100px; width: 1920px; text-align: center; opacity: 0; }
+      #cta .top .zh { font-family: var(--serif); font-weight: 900; font-size: 84px; color: #fff; text-shadow: 0 4px 0 rgba(0,0,0,.3), 0 12px 36px rgba(0,0,0,.7); }
+      #cta .top .sub { margin-top: 10px; font-family: var(--serif); font-size: 36px; color: var(--gold-l); }
+      #cta .act { position: absolute; left: 0; top: 330px; width: 1920px; text-align: center; opacity: 0; }
+      #cta .act .b { display: inline-block; background: var(--red); color: #fff; font-family: var(--serif); font-weight: 900; font-size: 56px; padding: 14px 60px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+      #cta .phone { position: absolute; left: 150px; top: 520px; width: 1150px; background: linear-gradient(180deg, #fbe9a6, #e2b54a 50%, #b8821a); border-radius: 22px; padding: 26px 40px; display: flex; align-items: center; gap: 34px; box-shadow: 0 16px 40px rgba(0,0,0,.5); opacity: 0; }
+      #cta .phone .ico { width: 110px; height: 110px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 64px; flex: 0 0 110px; }
+      #cta .phone .n { font-family: var(--serif); font-weight: 900; font-size: 96px; color: var(--red); line-height: 1; letter-spacing: .02em; }
+      #cta .phone .l { font-size: 30px; font-weight: 900; color: #4a2a00; }
+      #cta .site { position: absolute; left: 150px; top: 760px; width: 1150px; font-family: var(--serif); font-weight: 900; font-size: 60px; color: #fff; text-shadow: 0 4px 16px rgba(0,0,0,.7); opacity: 0; }
+      #cta .site small { font-size: 32px; color: var(--gold-l); margin-right: 24px; }
+      #cta .qr { position: absolute; right: 150px; top: 300px; width: 360px; text-align: center; opacity: 0; }
+      #cta .qr img { width: 250px; height: 250px; background: #fff; padding: 14px; border-radius: 14px; }
+      #cta .qr .t { color: #fff; font-size: 24px; margin-top: 10px; font-weight: 700; }
+      #cta .presenter { position: absolute; right: 20px; bottom: -8px; height: 430px; width: auto; filter: drop-shadow(0 20px 40px rgba(0,0,0,.6)); opacity: 0; display: none; }
+      #cta .brand { left: 110px; top: 60px; color: #fff; }
+
+      /* ---- captions / overlay ---- */
+      #captions { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; z-index: 60; pointer-events: none; }
+      .cap { position: absolute; left: 0; bottom: 0; width: 1920px; padding: 18px 110px 30px; background: linear-gradient(180deg, transparent, rgba(0,0,0,.72) 40%); opacity: 0; display: flex; align-items: center; gap: 22px; }
+      .cap .bd { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; background: rgba(23,50,54,.9); border: 2px solid var(--gold); border-radius: 999px; padding: 6px 18px 6px 8px; }
+      .cap .bd img { height: 44px; }
+      .cap .bd span { color: var(--gold-l); font-weight: 900; font-size: 20px; letter-spacing: .08em; }
+      .cap .zh { font-size: 40px; font-weight: 800; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.9), 0 0 16px rgba(0,0,0,.6); line-height: 1.3; }
+      #sweep { position: absolute; left: -90px; top: 0; width: 90px; height: 1080px; z-index: 70; background: linear-gradient(90deg, transparent, var(--gold-l), transparent); opacity: 0; }
+      #black { position: absolute; inset: 0; background: #000; z-index: 90; opacity: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="promo" data-start="0" data-duration="__TOTAL__" data-width="1920" data-height="1080">
+
+      <div id="hero" class="scene">
+        <img class="bg" id="hero-bg" alt="" />
+        <!--__VIDEO__-->
+        <div class="shade"></div>
+        <img class="presenter" id="hero-pres" alt="" />
+        <div class="brand"><img id="hero-logo" alt="" /><div class="t" id="hero-brand"></div></div>
+        <div class="plate">
+          <div class="ribbon" id="hero-ribbon"></div>
+          <div class="title" id="hero-title"></div>
+          <div class="sub" id="hero-sub"></div>
+          <div class="pills" id="hero-pills"></div>
+        </div>
+      </div>
+
+      <div id="reasons1" class="scene reasons">
+        <div class="pbg"><img id="r1-bg" alt="" /></div>
+        <div class="ptitle"><span class="n goldtxt" id="r1-n">8</span><span class="w">大必選理由</span><span class="e">WHY CHOOSE THIS TOUR</span></div>
+        <div class="items" id="r1-items"></div>
+        <div class="photo" id="r1-photo"><img id="r1-photo-img" alt="" /></div>
+      </div>
+
+      <div id="reasons2" class="scene reasons">
+        <div class="pbg"><img id="r2-bg" alt="" /></div>
+        <div class="ptitle"><span class="n goldtxt" id="r2-n">8</span><span class="w">大必選理由</span><span class="e">WHY CHOOSE THIS TOUR</span></div>
+        <div class="items" id="r2-items"></div>
+        <div class="photo" id="r2-photo"><img id="r2-photo-img" alt="" /></div>
+      </div>
+
+      <div id="route" class="scene">
+        <div class="sec-t"><div class="zh">行程路線</div><div class="en">Route Map</div><div class="bar"></div></div>
+        <div class="mapbox" id="route-map"><!--__ROUTE_SVG__--></div>
+        <div class="meta" id="route-meta"></div>
+        <div class="ports" id="route-ports"></div>
+      </div>
+
+      <div id="ports" class="scene"><div id="ports-shots"></div></div>
+
+      <div id="ship" class="scene">
+        <div class="sec-t"><div class="zh" id="ship-title">郵輪與艙房</div><div class="en">The Ship &amp; Your Stateroom</div><div class="bar"></div></div>
+        <div class="g1" id="ship-g1"><img id="ship-i1" alt="" /></div>
+        <div class="g2" id="ship-g2"><img id="ship-i2" alt="" /></div>
+        <div class="g3" id="ship-g3"><img id="ship-i3" alt="" /></div>
+        <div class="cap" id="ship-cap"></div>
+      </div>
+
+      <div id="price" class="scene">
+        <div class="sec-t"><div class="zh">行程總覽與價格</div><div class="en">Overview &amp; Prices</div><div class="bar"></div></div>
+        <div class="card" id="price-card"><div class="hd" id="price-hd"></div><div id="price-rows"></div></div>
+        <div class="big" id="price-big"><div class="l">雙人房每位</div><div class="p goldtxt" id="price-p"></div><div class="u">起 / 人</div></div>
+        <div class="inc" id="price-inc"></div>
+      </div>
+
+      <div id="cta" class="scene">
+        <img class="bgc bg" id="cta-bg" alt="" />
+        <div class="frame"></div>
+        <div class="brand"><img id="cta-logo" alt="" /><div class="t" id="cta-brand"></div></div>
+        <div class="top" id="cta-top"><div class="zh" id="cta-title"></div><div class="sub" id="cta-sub"></div></div>
+        <div class="act" id="cta-act"><span class="b">名額有限 ・ 立即行動！</span></div>
+        <div class="phone" id="cta-phone"><div class="ico">☎</div><div><div class="l" id="cta-phone-l">立即致電</div><div class="n" id="cta-phone-n"></div></div></div>
+        <div class="site" id="cta-site"><small>官方網站</small><span id="cta-url"></span></div>
+        <div class="qr" id="cta-qr"><img id="cta-qr-img" alt="" /><div class="t">手機直接掃描 ・ 線上專人諮詢</div></div>
+        <img class="presenter" id="cta-pres" alt="" />
+      </div>
+
+      <div id="captions"></div>
+      <div id="sweep"></div>
+      <div id="black"></div>
+<!--__AUDIO__-->
+    </div>
+
+    <script>
+      var DATA = /*__DATA__*/;
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      var S = {}; DATA.scenes.forEach(function (s) { S[s.id] = s; });
+      var TOTAL = DATA.total, M = DATA.media || {};
+      function u(id, i) { var s = S[id]; return s && s.units[i] ? s.units[i].start : null; }
+      function ue(id, i) { var s = S[id]; return s && s.units[i] ? s.units[i].end : null; }
+      var FT = function (sel, from, to, t) { tl.fromTo(sel, from, to, t); };
+      function $(id) { return document.getElementById(id); }
+      function el(tag, cls, html) { var d = document.createElement(tag); if (cls) d.className = cls; if (html != null) d.innerHTML = html; return d; }
+      function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+      function money(n) { return "US$" + Number(n).toLocaleString("en-US"); }
+      function brandHtml() { return esc(DATA.brandCn) + "<small>" + esc(DATA.brandEn) + "</small>"; }
+
+      /* ---------- static fills ---------- */
+      $("hero-logo").src = M.logo || ""; $("cta-logo").src = M.logo || "";
+      $("hero-brand").innerHTML = brandHtml(); $("cta-brand").innerHTML = brandHtml();
+      $("hero-bg").src = M.presenterScene || M.cover || "";
+      if (M.presenter && !M.presenterScene) { $("hero-pres").src = M.presenter; } else { $("hero-pres").style.display = "none"; }
+      $("hero-ribbon").innerHTML = DATA.tag ? "★ 慶祝" + esc(DATA.brandCn) + " <b>" + esc(DATA.tag) + "</b> ★" : "★ " + esc(DATA.brandCn) + " 誠摯推薦 ★";
+      $("hero-title").textContent = DATA.titleShort; if (DATA.titleShort.length > 11) $("hero-title").style.fontSize = "84px";
+      $("hero-sub").innerHTML = [DATA.ship ? "搭乘 <b>" + esc(DATA.ship) + "</b>" : "", esc(DATA.date), esc(DATA.duration)].filter(Boolean).join(" ・ ");
+      (DATA.includes || []).slice(0, 4).forEach(function (s, i) {
+        var p = el("span", "pill" + (i % 2 ? " g" : ""), "包" + esc(s.replace(/^全程/, ""))); p.id = "hero-pill" + i; $("hero-pills").appendChild(p);
+      });
+      if (DATA.price) { var p = el("span", "pill g", "只要 " + money(DATA.price) + " 起"); p.id = "hero-pillp"; $("hero-pills").appendChild(p); }
+
+      var R = DATA.reasons || [];
+      ["r1", "r2"].forEach(function (k, pi) {
+        var items = R.slice(pi * 4, pi * 4 + 4), box = $(k + "-items");
+        $(k + "-n").textContent = R.length || 8;
+        items.forEach(function (r, i) {
+          var d = el("div", "it", '<span class="rn">' + esc(r.no) + "</span><div><h4>" + esc(r.title) + "</h4><p>" + esc((r.bullets || []).slice(0, 2).join(" ")) + "</p></div>");
+          d.id = k + "-it" + i; box.appendChild(d);
+        });
+        $(k + "-bg").src = (M.posters || [])[pi] || M.cover || "";
+        var ph = (DATA.ports || [])[pi === 0 ? 0 : Math.min(3, (DATA.ports || []).length - 1)];
+        $(k + "-photo-img").src = (ph && ph.img) || (M.ships || [])[pi] || M.cover || "";
+      });
+
+      (DATA.ports || []).forEach(function (p, i) {
+        var d = el("div", "port", "<b>DAY " + p.day + "</b><div><div class='z'>" + esc(p.zh) + "</div><div class='e'>" + esc(p.en) + "</div></div>");
+        d.id = "route-p" + i; $("route-ports").appendChild(d);
+      });
+      $("route-meta").innerHTML = "<b>" + esc(DATA.duration) + "</b><br>" + esc(DATA.dateFull || DATA.date) + (DATA.ship ? "<br>" + esc(DATA.ship) : "");
+
+      (DATA.ports || []).forEach(function (p, i) {
+        var d = el("div", "shot", '<img src="' + (p.img || M.cover || "") + '" alt="" /><div class="vig"></div><div class="dayt">DAY ' + p.day + "</div><div class=\"name\"><div class=\"z\">" + esc(p.zh) + "</div><div class=\"e\">" + esc(p.en) + "</div></div>");
+        d.id = "shot" + i; $("ports-shots").appendChild(d);
+      });
+
+      var ships = M.ships || [];
+      $("ship-i1").src = ships[0] || M.cover || ""; $("ship-i2").src = ships[1] || ships[0] || M.cover || ""; $("ship-i3").src = ships[2] || ships[1] || M.cover || "";
+      if (DATA.ship) $("ship-title").textContent = DATA.ship;
+      $("ship-cap").textContent = (DATA.narration && DATA.narration.ship && DATA.narration.ship[1]) || (DATA.narration && DATA.narration.ship && DATA.narration.ship[0]) || "";
+
+      $("price-hd").textContent = DATA.titleFull;
+      (DATA.prices || []).forEach(function (pr, i) {
+        var d = el("div", "row", "<span>" + esc(pr.optionName) + "</span><span class='p'>" + money(pr.price) + "</span>"); d.id = "price-r" + i; $("price-rows").appendChild(d);
+      });
+      if (!(DATA.prices || []).length) { var d0 = el("div", "row", "<span>" + esc(DATA.duration) + " ・ " + esc(DATA.date) + "</span><span class='p'>" + (DATA.price ? money(DATA.price) : "洽詢") + "</span>"); d0.id = "price-r0"; $("price-rows").appendChild(d0); }
+      $("price-p").textContent = DATA.price ? money(DATA.price) : "洽詢";
+      (DATA.includes || []).forEach(function (s, i) { var d = el("span", "", esc(s)); d.id = "price-i" + i; $("price-inc").appendChild(d); });
+
+      $("cta-bg").src = M.cover || ""; $("cta-title").textContent = DATA.titleShort;
+      $("cta-sub").textContent = [DATA.tag, DATA.date, DATA.price ? "只要 " + money(DATA.price) + " 起" : ""].filter(Boolean).join(" ・ ");
+      var ph0 = (DATA.phones || []).find(function (p) { return p.phone; }) || { phone: "", country: "" };
+      $("cta-phone-n").textContent = ph0.phone; $("cta-phone-l").textContent = "立即致電" + (ph0.country ? " ・ " + ph0.country + "專線" : "");
+      $("cta-url").textContent = DATA.urlShort.replace(/\/$/, "").toUpperCase();
+      if (M.qr) $("cta-qr-img").src = M.qr; else $("cta-qr").style.display = "none";
+      if (M.presenter) { $("cta-pres").src = M.presenter; $("cta-pres").style.display = "block"; }
+
+      /* ---------- captions ---------- */
+      var capBox = $("captions");
+      DATA.captions.forEach(function (c, i) {
+        var d = el("div", "cap", '<div class="bd"><img src="' + (M.logo || "") + '" alt="" /><span>' + esc(DATA.brandCn) + '</span></div><div class="zh"></div>');
+        d.querySelector(".zh").textContent = c.zh; d.id = "cap-" + i; capBox.appendChild(d);
+        var end = (i < DATA.captions.length - 1) ? Math.min(c.end + 0.35, DATA.captions[i + 1].start - 0.02) : c.end + 0.8;
+        tl.fromTo(d, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" }, c.start - 0.08);
+        tl.to(d, { opacity: 0, duration: 0.14 }, end - 0.14);
+        tl.set(d, { opacity: 0 }, end);
+      });
+
+      /* ---------- scene transitions ---------- */
+      DATA.scenes.forEach(function (s, i) {
+        var e = "#" + s.id;
+        if (i === 0) { tl.set(e, { opacity: 1 }, 0); return; }
+        var T = s.start;
+        tl.set(e, { opacity: 1, clipPath: "inset(0 100% 0 0)" }, T);
+        tl.to(e, { clipPath: "inset(0 0% 0 0)", duration: 0.6, ease: "power3.inOut" }, T);
+        tl.set("#sweep", { opacity: 1 }, T);
+        tl.fromTo("#sweep", { x: 0 }, { x: 2010, duration: 0.6, ease: "power3.inOut" }, T);
+        tl.set("#sweep", { opacity: 0 }, T + 0.61);
+        tl.set("#" + DATA.scenes[i - 1].id, { opacity: 0 }, T + 0.65);
+      });
+
+      /* ---------- hero ---------- */
+      if (S.hero) (function () {
+        var T = S.hero.start, D = S.hero.dur;
+        if (!M.intro) FT("#hero-bg", { scale: 1.0 }, { scale: 1.1, duration: D, ease: "none" }, T);
+        FT("#hero-pres", { opacity: 0, x: -80 }, { opacity: 1, x: 0, duration: 0.9, ease: "power3.out" }, T + 0.3);
+        FT("#hero-ribbon", { opacity: 0, y: -30, scale: 0.8 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "back.out(1.6)" }, u("hero", 0) - 0.2);
+        FT("#hero-title", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, (u("hero", 1) || T + 2) - 0.1);
+        FT("#hero-sub", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, (u("hero", 1) || T + 2) + 0.9);
+        var t2 = u("hero", 2) || (u("hero", 1) || T) + 3;
+        document.querySelectorAll("#hero .pill").forEach(function (p, i) {
+          FT(p, { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(2.2)" }, t2 + 0.2 + i * 0.5);
+        });
+      })();
+
+      /* ---------- reasons ---------- */
+      ["reasons1", "reasons2"].forEach(function (sid, pi) {
+        if (!S[sid]) return;
+        var T = S[sid].start, D = S[sid].dur, k = pi ? "r2" : "r1";
+        FT("#" + k + "-bg", { scale: 1 }, { scale: 1.08, duration: D, ease: "none" }, T);
+        FT("#" + k + "-photo", { opacity: 0, x: 60, rotation: 2 }, { opacity: 1, x: 0, rotation: 0, duration: 0.8, ease: "power3.out" }, T + 0.5);
+        for (var i = 0; i < 4; i++) {
+          var at = u(sid, i); if (at == null) break;
+          FT("#" + k + "-it" + i, { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, at - 0.1);
+        }
+      });
+
+      /* ---------- route ---------- */
+      if (S.route) (function () {
+        var T = S.route.start, D = S.route.dur;
+        var svg = document.getElementById("route-svg");
+        if (svg) {
+          var paths = svg.querySelectorAll("path, polyline, line");
+          paths.forEach(function (p, i) {
+            var L = 0; try { L = p.getTotalLength(); } catch (e) {}
+            if (!L) return;
+            if (L > 150) {   // the legs: draw them in; tiny paths (markers) just fade
+              p.style.strokeDasharray = L; p.style.strokeDashoffset = L;
+              tl.to(p, { strokeDashoffset: 0, duration: Math.min(1.6, 0.4 + L / 900), ease: "power1.inOut" }, T + 0.8 + i * 0.22);
+            } else {
+              FT(p, { opacity: 0 }, { opacity: 1, duration: 0.3 }, T + 0.8 + i * 0.22);
+            }
+          });
+          svg.querySelectorAll("text, circle").forEach(function (t, i) {
+            FT(t, { opacity: 0 }, { opacity: 1, duration: 0.35 }, T + 1.2 + i * 0.25);
+          });
+        }
+        FT("#route .sec-t", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.6, ease: "power3.out" }, T + 0.3);
+        FT("#route-meta", { opacity: 0 }, { opacity: 1, duration: 0.5 }, T + 0.5);
+        (DATA.ports || []).forEach(function (p, i) {
+          FT("#route-p" + i, { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, T + 1.0 + i * 0.35);
+        });
+      })();
+
+      /* ---------- ports montage ---------- */
+      if (S.ports) (function () {
+        var T = S.ports.start, D = S.ports.dur, n = (DATA.ports || []).length, units = S.ports.units;
+        (DATA.ports || []).forEach(function (p, i) {
+          var st = (units[i] ? units[i].start : T + i * (D / n)) - 0.3;
+          if (i === 0) st = T;
+          var en = (units[i + 1] ? units[i + 1].start : T + D) - 0.3;
+          if (i === n - 1) en = T + D;
+          tl.set("#shot" + i, { opacity: 0 }, 0);
+          tl.set("#shot" + i, { opacity: 1 }, st);
+          var img = "#shot" + i + " img";
+          var dir = i % 2 ? -1 : 1;
+          FT(img, { scale: 1.05, x: 30 * dir }, { scale: 1.16, x: -30 * dir, duration: en - st + 0.2, ease: "none" }, st);
+          FT("#shot" + i + " .dayt", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4 }, st + 0.2);
+          FT("#shot" + i + " .name", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, st + 0.35);
+          if (i < n - 1) tl.to("#shot" + i, { opacity: 0, duration: 0.35 }, en - 0.05);
+        });
+      })();
+
+      /* ---------- ship ---------- */
+      if (S.ship) (function () {
+        var T = S.ship.start, D = S.ship.dur;
+        FT("#ship .sec-t", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.6, ease: "power3.out" }, T + 0.3);
+        FT("#ship-g1", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, T + 0.4);
+        FT("#ship-g2", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.6, ease: "power3.out" }, T + 0.8);
+        FT("#ship-g3", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.6, ease: "power3.out" }, T + 1.1);
+        FT("#ship-i1", { scale: 1 }, { scale: 1.1, duration: D, ease: "none" }, T);
+        FT("#ship-cap", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5 }, (u("ship", 1) || u("ship", 0) || T + 2) - 0.1);
+      })();
+
+      /* ---------- price ---------- */
+      if (S.price) (function () {
+        var T = S.price.start, D = S.price.dur;
+        FT("#price .sec-t", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.6, ease: "power3.out" }, T + 0.3);
+        FT("#price-card", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, T + 0.5);
+        document.querySelectorAll("#price .row").forEach(function (r, i) { FT(r, { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4 }, T + 0.9 + i * 0.3); });
+        FT("#price-big", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.7, ease: "back.out(1.8)" }, (u("price", 0) || T + 1) + 0.6);
+        var t1 = u("price", 1) || (u("price", 0) || T) + 2.5;
+        document.querySelectorAll("#price-inc span").forEach(function (s, i) { FT(s, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35 }, t1 + i * 0.3); });
+      })();
+
+      /* ---------- cta ---------- */
+      if (S.cta) (function () {
+        var T = S.cta.start, D = S.cta.dur;
+        FT("#cta-bg", { scale: 1.08 }, { scale: 1.16, duration: D, ease: "none" }, T);
+        FT("#cta .frame", { opacity: 0 }, { opacity: 1, duration: 0.6 }, T + 0.2);
+        FT("#cta-top", { opacity: 0, y: -30 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, T + 0.4);
+        FT("#cta-act", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2)" }, (u("cta", 0) || T + 1) - 0.1);
+        FT("#cta-phone", { opacity: 0, x: -60 }, { opacity: 1, x: 0, duration: 0.7, ease: "power3.out" }, (u("cta", 1) || u("cta", 0) + 2 || T + 3) - 0.2);
+        FT("#cta-site", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5 }, (u("cta", 2) || u("cta", 1) + 3 || T + 6) - 0.2);
+        FT("#cta-qr", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.6)" }, (u("cta", 1) || T + 3) + 0.4);
+        FT("#cta-pres", { opacity: 0, x: 80 }, { opacity: 1, x: 0, duration: 0.8, ease: "power3.out" }, T + 0.6);
+        tl.to("#black", { opacity: 1, duration: 1.2, ease: "power2.in" }, TOTAL - 1.3);
+      })();
+
+      tl.set({}, {}, TOTAL);
+      window.__timelines["promo"] = tl;
+    </script>
+  </body>
+</html>

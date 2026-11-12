@@ -1,0 +1,10 @@
+{
+  "_comment": "Push a change to this file on main to build a promo video (same keys as the workflow inputs).",
+  "tour_id": "7622",
+  "voice": "edge",
+  "youtube_bgm": "https://www.youtube.com/watch?v=OIb7zfhTuvM",
+  "bgm_url": "",
+  "images": "auto",
+  "quality": "standard",
+  "publish_r2": false
+}

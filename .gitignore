@@ -1,0 +1,8 @@
+# the presenter's voice reference is only ever committed encrypted (see voice_tool.py)
+assets/ronnie/ronnie_ref.wav
+*.key
+key.txt
+__pycache__/
+node_modules/
+*.log
+.hf/
