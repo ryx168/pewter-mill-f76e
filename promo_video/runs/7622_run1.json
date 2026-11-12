@@ -1,0 +1,18 @@
+{
+ "tourId": "7622",
+ "seconds": 131.041,
+ "voice": "edge",
+ "images": "brochure/site",
+ "clips": "none",
+ "music": null,
+ "presenterScene": false,
+ "intro": true,
+ "status": "success",
+ "run": "1",
+ "run_id": "43146700552",
+ "event": "push",
+ "quality": "standard",
+ "finished": "2026-11-12T03:21:45.088625Z",
+ "release": "promo-7622-run1",
+ "url": "https://github.com/ryx168/pewter-mill-f76e/actions/runs/43146700552"
+}
