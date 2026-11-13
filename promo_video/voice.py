@@ -95,8 +95,17 @@ class Narrator:
             from omnivoice import OmniVoice
             from omnivoice.models.omnivoice import OmniVoiceGenerationConfig
             self._model = OmniVoice.from_pretrained(OMNI_MODEL)
-            # the reference is encoded (and transcribed by Whisper) ONCE, not per line - that was most of the cost
-            self._prompt = self._model.create_voice_clone_prompt(ref_audio=self.ref)
+            # the reference is encoded ONCE, not per line - that was most of the cost. A sidecar
+            # <ref>.txt transcript skips Whisper (a 1.5 GB download on a runner).
+            ref_txt = os.path.splitext(self.ref)[0] + ".txt"
+            ref_text = open(ref_txt, encoding="utf-8").read().strip() if os.path.exists(ref_txt) else None
+            if ref_text:
+                log(f"  reference transcript: {ref_txt}")
+                self._prompt = self._model.create_voice_clone_prompt(ref_audio=self.ref, ref_text=ref_text)
+            else:
+                if hasattr(self._model, "load_asr_model"):
+                    self._model.load_asr_model()
+                self._prompt = self._model.create_voice_clone_prompt(ref_audio=self.ref)
             self._cfg = OmniVoiceGenerationConfig(num_step=int(os.environ.get("OMNIVOICE_STEPS", "32")))
         audio = self._model.generate(text=_to_simplified(text), voice_clone_prompt=self._prompt,
                                      speed=self.speed, generation_config=self._cfg)

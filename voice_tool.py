@@ -33,8 +33,10 @@ def run(mode, src, dst, key_file):
         cmd.insert(2, "-d")
     if key_file:
         cmd += ["-pass", "file:" + key_file]
-    elif os.environ.get("VOICE_KEY"):
-        cmd += ["-pass", "env:VOICE_KEY"]
+    elif os.environ.get("VOICE_KEY", "").strip():
+        # a secret set from a file often carries a trailing CR/LF; openssl would then say "bad decrypt"
+        os.environ["VOICE_KEY_CLEAN"] = os.environ["VOICE_KEY"].strip()
+        cmd += ["-pass", "env:VOICE_KEY_CLEAN"]
     else:
         return False
     subprocess.run(cmd, check=True)

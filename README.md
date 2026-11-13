@@ -45,9 +45,10 @@ Ken Burns, edge-tts narration, no music bed.
 ## The voice
 
 The presenter's reference recording is a real person's voice, so it is only committed
-**encrypted** (`openssl enc -aes-256-cbc -pbkdf2`). Without `VOICE_KEY` the workflow uses
-edge-tts; with it, `voice: omnivoice` clones the presenter on CPU (slow: ~60x real time at
-32 steps, the workflow uses 16; expect an hour or more per video).
+**encrypted** (`assets/ronnie/ronnie_ref.wav.enc`, `openssl enc -aes-256-cbc -pbkdf2`), with
+its transcript beside it (`ronnie_ref.txt`, so the runner never downloads Whisper). Without
+`VOICE_KEY` the workflow uses edge-tts; with it, `voice: omnivoice` clones the presenter on
+CPU (slow: ~60x real time at 32 steps, the workflow uses 16; expect an hour or more per video).
 
 ```
 python voice_tool.py encrypt --key-file /path/to/key.txt --src /path/to/new_ref.wav
