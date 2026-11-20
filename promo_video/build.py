@@ -409,7 +409,13 @@ def music_stage(args):
             got = dst + os.path.splitext(src.split("?")[0])[1]; media.fetch(src, got)
         elif os.path.exists(src):
             got = dst + os.path.splitext(src)[1]; shutil.copy(src, got)
-    log("music:", got or "none")
+    credit_file = os.path.join(ASSETS, "bgm_credit.txt")
+    if os.path.exists(credit_file):
+        os.remove(credit_file)
+    if got and args.bgm_credit:
+        with open(credit_file, "w", encoding="utf-8") as f:
+            f.write(args.bgm_credit.strip())
+    log("music:", got or "none", "|", args.bgm_credit or "no credit line")
 
 # ================================================================ compose
 def compose(args):
@@ -447,6 +453,10 @@ def compose(args):
     log(f"wrote index.html  total {T['total']}s  videos {len(videos)}")
 
 # ================================================================ finish
+def bgm_credit():
+    p = os.path.join(ASSETS, "bgm_credit.txt")
+    return open(p, encoding="utf-8").read().strip() if os.path.exists(p) else ""
+
 def youtube_metadata(P):
     lines = [f"# {P['titleFull']} | {P['brandCn']} {P['brandEn']}", "", "## Description", "",
              f"✨ {P.get('seoDesc') or P['titleFull']} ✨", ""]
@@ -459,7 +469,10 @@ def youtube_metadata(P):
     if P.get("price"):
         lines += [f"💰 每位只要 US${P['price']} 起", ""]
     lines += ["📞 聯絡我們 (Contact Us)："] + [f"{p['country']} {p['phone']}" for p in P["phones"] if p["phone"]]
-    lines += [f"🔗 行程詳情: {P['url']}", "", "## Tags", "",
+    lines += [f"🔗 行程詳情: {P['url']}", ""]
+    if bgm_credit():
+        lines += [f"🎵 Music: {bgm_credit()}", ""]
+    lines += ["## Tags", "",
               ", ".join([x for x in [P.get("tag"), P.get("ship"), P["brandCn"], P["brandEn"]] if x] + [k.strip() for k in P.get("keywords", "").split(",") if k.strip()][:20])]
     return "\n".join(lines) + "\n"
 
@@ -498,7 +511,7 @@ def finish(args):
         f.write(youtube_metadata(P))
     save_json(os.path.join(OUT, f"promo_{tid}_report.json"), dict(
         tourId=tid, seconds=total, voice=T.get("voice"), images=P.get("media", {}).get("imagesFrom"),
-        clips=P.get("media", {}).get("clipsFrom"), music=os.path.basename(bgm) if bgm else None,
+        clips=P.get("media", {}).get("clipsFrom"), music=os.path.basename(bgm) if bgm else None, musicCredit=bgm_credit() or None,
         presenterScene=bool(P.get("media", {}).get("presenterScene")), intro=bool(P.get("media", {}).get("intro"))))
     log("wrote", final, "|", poster)
 
@@ -519,6 +532,7 @@ def main():
     ap.add_argument("--youtube", help="YouTube URL for the music bed (yt-dlp)")
     ap.add_argument("--bgm", help="music file or direct URL")
     ap.add_argument("--bgm-volume", default="0.22")
+    ap.add_argument("--bgm-credit", default="", help="attribution line for a CC-BY track; goes into the YouTube description")
     args = ap.parse_args()
     stages = {"plan": plan, "media": media_stage, "voice": voice_stage, "music": music_stage, "compose": compose}
     if args.stage == "all":

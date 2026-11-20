@@ -2,8 +2,9 @@
   "_comment": "Push a change to this file on main to build a promo video (same keys as the workflow inputs).",
   "tour_id": "7622",
   "voice": "edge",
-  "youtube_bgm": "https://www.youtube.com/watch?v=OIb7zfhTuvM",
-  "bgm_url": "",
+  "youtube_bgm": "",
+  "bgm_url": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Celtic%20Impulse.mp3",
+  "bgm_credit": "Celtic Impulse by Kevin MacLeod (incompetech.com), licensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/",
   "images": "auto",
   "quality": "standard",
   "publish_r2": false

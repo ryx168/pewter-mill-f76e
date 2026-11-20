@@ -34,6 +34,10 @@ on:
         description: "Direct URL of a licensed music file (used if YouTube fails or is empty)"
         required: false
         default: ""
+      bgm_credit:
+        description: "Credit line for a CC-BY music file (goes into the YouTube description)"
+        required: false
+        default: ""
       images:
         description: "Port images"
         type: choice
@@ -80,6 +84,7 @@ jobs:
             echo "VOICE=$(get voice edge)"           >> "$GITHUB_ENV"
             echo "YOUTUBE_BGM=$(get youtube_bgm '')" >> "$GITHUB_ENV"
             echo "BGM_URL=$(get bgm_url '')"         >> "$GITHUB_ENV"
+            echo "BGM_CREDIT=$(get bgm_credit '')"   >> "$GITHUB_ENV"
             echo "IMAGES=$(get images auto)"         >> "$GITHUB_ENV"
             echo "QUALITY=$(get quality standard)"   >> "$GITHUB_ENV"
             echo "PUBLISH=$(get publish_r2 false)"   >> "$GITHUB_ENV"
@@ -88,6 +93,7 @@ jobs:
             echo "VOICE=${{ inputs.voice }}"           >> "$GITHUB_ENV"
             echo "YOUTUBE_BGM=${{ inputs.youtube_bgm }}" >> "$GITHUB_ENV"
             echo "BGM_URL=${{ inputs.bgm_url }}"       >> "$GITHUB_ENV"
+            echo "BGM_CREDIT=${{ inputs.bgm_credit }}" >> "$GITHUB_ENV"
             echo "IMAGES=${{ inputs.images }}"         >> "$GITHUB_ENV"
             echo "QUALITY=${{ inputs.quality }}"       >> "$GITHUB_ENV"
             echo "PUBLISH=${{ inputs.publish_r2 }}"    >> "$GITHUB_ENV"
@@ -156,7 +162,7 @@ jobs:
       - name: Music
         working-directory: promo_video
         run: |
-          python build.py --id "$TOUR_ID" music --youtube "$YOUTUBE_BGM" --bgm "$BGM_URL" || echo "::warning::no music bed (YouTube refused the runner's IP or no URL given)"
+          python build.py --id "$TOUR_ID" music --youtube "$YOUTUBE_BGM" --bgm "$BGM_URL" --bgm-credit "$BGM_CREDIT" || echo "::warning::no music bed (YouTube refused the runner's IP or no URL given)"
 
       - name: Compose + lint
         working-directory: promo_video
