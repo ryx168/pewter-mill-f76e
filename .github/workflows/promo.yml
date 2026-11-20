@@ -203,7 +203,8 @@ jobs:
           TAG="promo-${TOUR_ID}-run${{ github.run_number }}"
           gh release create "$TAG" --title "Tour ${TOUR_ID} promo (run ${{ github.run_number }}, $VOICE voice, $QUALITY)" \
             --notes "Built by run ${{ github.run_id }}. Narration: $VOICE. Images: $IMAGES." \
-            promo_video/out/promo_${TOUR_ID}.mp4 promo_video/out/promo_${TOUR_ID}_poster.jpg promo_video/renders/review_sheet.jpg || true
+            promo_video/out/promo_${TOUR_ID}.mp4 promo_video/out/promo_${TOUR_ID}_poster.jpg promo_video/renders/review_sheet.jpg \
+            promo_video/out/youtube_metadata_${TOUR_ID}.md || true
 
       - name: Publish to R2 (optional)
         if: env.PUBLISH == 'true'
