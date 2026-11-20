@@ -1,0 +1,19 @@
+{
+ "tourId": "7622",
+ "seconds": 131.041,
+ "voice": "edge",
+ "images": "brochure/site",
+ "clips": "none",
+ "music": "bgm.mp3",
+ "musicCredit": "Celtic Impulse by Kevin MacLeod (incompetech.com), licensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/",
+ "presenterScene": false,
+ "intro": true,
+ "status": "success",
+ "run": "3",
+ "run_id": "44809346938",
+ "event": "push",
+ "quality": "standard",
+ "finished": "2026-11-20T20:39:18.631173Z",
+ "release": "promo-7622-run3",
+ "url": "https://github.com/ryx168/pewter-mill-f76e/actions/runs/44809346938"
+}
